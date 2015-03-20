@@ -8,6 +8,7 @@ setup(
     name='Directory_Caching',
     version='1.0.5',
     url='https://github.com/bschollnick/Directory_Caching',
+    download_url = 'https://github.com/bschollnick/Directory_Caching/tarball/1.05', # I'll explain this in a second
     description = 'A Caching library for Directories & Files',
     author='Benjamin Schollnick',
     author_email='benjamin@schollnick.net',
