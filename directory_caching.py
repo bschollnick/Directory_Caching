@@ -107,6 +107,7 @@ code::
 """
 #####################################################
 #   Batteries Included imports
+import exceptions
 import os
 import os.path
 import stat
@@ -233,9 +234,6 @@ class Cache(object):
             # This is the path in the OS that is being examined
             #    (e.g. /Volumes/Users/username/)
         self.d_cache = {}
-
-
-#####################################################
 #####################################################
     def _scan_directory_list(self, scan_directory):
         """
@@ -261,6 +259,7 @@ class Cache(object):
 
         norm_dir_name = scan_directory.strip()
         self.d_cache[norm_dir_name] = {}
+        self.d_cache[norm_dir_name]["last_sort"] = None
 
         for s_entry in scandir.scandir(scan_directory):
             data = DirEntry()
@@ -269,10 +268,13 @@ class Cache(object):
                 orig_name = s_entry.name
                 clean_name = self.filter_filenames(orig_name)
                 if orig_name != clean_name:
-                    os.rename(os.path.join(s_entry._path, orig_name),
-                              os.path.join(os.path.realpath(\
-                                           scan_directory).strip(),
-                                           clean_name))
+                    try:
+                        os.rename(os.path.join(s_entry._path, orig_name),
+                                  os.path.join(os.path.realpath(\
+                                               scan_directory).strip(),
+                                               clean_name))
+                    except exceptions.OSError:
+                        pass
             else:
                 clean_name = s_entry.name
 
