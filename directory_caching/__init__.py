@@ -78,7 +78,7 @@ code::
     if not cdl.directory_in_cache("/Volumes/Gallery/Albums")
         cdl.smart_read("/Volumes/Gallery/Albums")
 
-    cached_dirs, cached_files = cdl.return_sorted(
+    cached_files, cached_dirs = cdl.return_sorted(
                     scan_directory="/Volumes/Gallery/Albums",
                     sort_by=SORT_BY_NAME, reverse=False)
 
@@ -193,7 +193,6 @@ class DirEntry(object):
         self.st = None
         self.human_st_mtime = None
 
-
 #####################################################
 class Cache(object):
     """
@@ -214,6 +213,8 @@ class Cache(object):
         * An empty list [], indicates **all** files should be accepted.
         * By default, all files are allowed / accepted.
         * As above, these extensions need to be normalized in lowercase.
+    * ''hidden_dot_files'', boolean value.  If true, any file that starts
+        with a . will be ignored.  Otherwise, they will be added to the cache.
 
     **Note:**
 
@@ -225,9 +226,12 @@ class Cache(object):
     def __init__(self):
         """
         Setup and establish the working implementation for directory caching.
+
+
         """
         # User Changable Settings
         self.files_to_ignore = ['.ds_store', '.htaccess']
+        self.hidden_dot_files = True
         self.acceptable_extensions = []
         self.filter_filenames = None
         self.root_path = None
@@ -287,6 +291,10 @@ class Cache(object):
                 time.localtime(data.st[stat.ST_MTIME]))
             if clean_name.strip().lower() in self.files_to_ignore:
                 continue
+            if self.hidden_dot_files:
+                if clean_name.startswith("."):
+                    continue
+
             if s_entry.is_dir():
                 data.filename = ""
                 data.directoryname = clean_name
@@ -387,7 +395,8 @@ class Cache(object):
                                         scan_directory,
                                         current_directory,
                                         offset=0,
-                                        sort_type=0):
+                                        sort_type=0,
+                                        reverse=False):
         """
     Args:
         scan_directory (str): The fully qualified pathname to examine
@@ -416,8 +425,8 @@ class Cache(object):
         * +1 - return the next directory in the list
 
     Code::
-
-       cdl = d_caching.Cache()
+       import directory_caching
+       cdl = directory_caching.Cache()
        cdl.smart_read( "/Users/Benjamin" )
        dirs = cdl.return_sort_name(scan_directory="/Users/Benjamin")[1]
        print dirs[cdl.return_current_directory_offset(
@@ -433,16 +442,9 @@ class Cache(object):
         """
         scan_directory = os.path.realpath(scan_directory).strip()
         self.smart_read(scan_directory)
-        if sort_type in [0, 1]:
-            #   Named Sort - 0, reverse name sort - 1
-            dirs = self.return_sort_name(scan_directory=scan_directory,
-                                         reverse=sort_type in [1])[1]
-        elif sort_type in [2, 3]:
-            dirs = self.return_sort_lmod(scan_directory=scan_directory,
-                                         reverse=sort_type in [0])[1]
-        elif sort_type in [4, 5]:
-            dirs = self.return_sort_ctime(scan_directory=scan_directory,
-                                          reverse=sort_type in [1])[1]
+        dirs = self.return_sorted(scan_directory,
+                                  sort_by=sort_type,
+                                  reverse=reverse)[1]
         current_offset = None
         for dir_entry in range(0, len(dirs)):
             if dirs[dir_entry][0].lower().strip() ==\
