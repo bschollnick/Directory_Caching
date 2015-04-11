@@ -24,8 +24,8 @@ try:
 except:
     from disutils.core import setup, find_packages
 
-__title__ = 'Directory_Caching'
-__version__ = '1.0.6b1'
+__title__ = 'directory_caching'
+__version__ = '1.10.2'
 __author__ = 'Benjamin Schollnick'
 __license__ = 'MIT'
 __copyright__ = 'Copyright 2015 Benjamin Schollnick'
@@ -38,19 +38,18 @@ doclines = __doc__.split("\n")
 #   Modelled after requests - https://github.com/kennethreitz/requests/blob/master/setup.py
 #
 setup(
-    name='Directory_Caching',
-    version='1.0.10',
+    name='directory_caching',
+    version=__version__,
     description = doclines[0],
     long_description = "\n".join(doclines[2:]),
-    author='Benjamin Schollnick',
+    author=__author__,
     author_email='benjamin@schollnick.net',
     url='https://github.com/bschollnick/Directory_Caching',
     license="MIT",
     maintainer='Benjamin Schollnick',
     maintainer_email='benjamin@schollnick.net',
     packages=find_packages(),
-#    py_module=['Directory_Caching'],
-#    package_dir={'Directory_Caching': ''},
+    package_dir={'directory_caching': 'directory_caching'},
     include_package_data=True,
 #    platforms=["Any"],
     download_url = 'https://github.com/bschollnick/Directory_Caching/tarball/1.05',
