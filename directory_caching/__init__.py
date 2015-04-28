@@ -5,7 +5,7 @@
 :Version: 1
 :Authors:
     - Benjamin Schollnick
-
+:Copyright (C) 2015, Benjamin Schollnick
 
 :Description:
     Used to cache and speed up Directory listings.  The Gallery project
