@@ -56,3 +56,5 @@ docs/_build/
 scandir.py
 
 .DS_Store
+
+retired/-setup.cfg
