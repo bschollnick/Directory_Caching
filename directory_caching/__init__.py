@@ -261,6 +261,7 @@ class Cache(object):
         Scan the directory "scan_directory", and save it to the
         self.d_cache dictionary.
 
+        If the Path does not exist, the path will not be added to the database.
         **Low Level function, intended to be used by the populate function.**
 
         scan_directory is matched absolutely, case sensitive,
@@ -271,13 +272,15 @@ class Cache(object):
         """
         directories = {}
         files = {}
+        if os.path.exists(scan_directory) != True:
+            return None
         norm_dir_name = scan_directory.strip()
         self.d_cache[norm_dir_name] = {}
         self.d_cache[norm_dir_name]["last_sort"] = None
 
         for s_entry in scandir.scandir(scan_directory):
             data = DirEntry()
-            data.st = s_entry.lstat()
+            data.st = s_entry.stat()
             if self.filter_filenames != None:
 #                orig_name = s_entry.name
                 clean_name = self.filter_filenames(s_entry.name)
@@ -289,6 +292,8 @@ class Cache(object):
                                                clean_name))
                     except exceptions.OSError:
                         pass
+                    except exceptions.AttributeError:
+                        print "Error with Directory, %s" % (s_entry.name)
 #                    rescan = True
             else:
                 clean_name = s_entry.name
@@ -584,7 +589,8 @@ class Cache(object):
         scan_directory (str): The fully qualified pathname to examine
 
     Returns:
-        None
+        True - Path Exists and/or Read was successful
+        False - Path does *NOT* exist
 
     This is a wrapper around the Read and changed functions.
 
@@ -667,8 +673,12 @@ class Cache(object):
 
         """
         scan_directory = os.path.realpath(scan_directory).strip()
-        if self.directory_changed(scan_directory):
-            self._scan_directory_list(scan_directory)
+        if os.path.exists(scan_directory) != False:
+            if self.directory_changed(scan_directory):
+                self._scan_directory_list(scan_directory)
+            return True
+        else:
+            return False
 
 #####################################################
     def return_sorted(self, scan_directory, sort_by=0, reverse=False):
@@ -695,7 +705,8 @@ class Cache(object):
 
         """
         scan_directory = os.path.realpath(scan_directory).strip()
-        self.smart_read(scan_directory)
+        if self.smart_read(scan_directory) == False:
+            return ([], [])
         if self.d_cache[scan_directory]["last_sort"] != sort_by:
             self.d_cache[scan_directory]["last_sort"] = sort_by
             files = self.d_cache[scan_directory]["files"]

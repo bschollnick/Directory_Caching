@@ -12,7 +12,7 @@ except:
 
 __title__ = 'directory_caching'
 __module_name__ = __title__
-__version__ = '1.11'
+__version__ = '1.12'
 __author__ = 'Benjamin Schollnick'
 __author_email__ = 'Benjamin@schollnick.net'
 __license__ = 'MIT'
