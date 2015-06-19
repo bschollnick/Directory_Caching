@@ -18,7 +18,7 @@ __author_email__ = 'Benjamin@schollnick.net'
 __license__ = 'MIT'
 __copyright__ = 'Copyright 2015 Benjamin Schollnick'
 __github_url__ = 'https://github.com/bschollnick/Directory_Caching/tree/master'
-__github_dl_url__ = 'https://github.com/bschollnick/Directory_Caching/archive/v1.05.zip'
+#__github_dl_url__ = 'https://github.com/bschollnick/Directory_Caching/archive/v1.05.zip'
 
 __pypi_keywords__ ='caching files directories scandir naturalsort'
 
