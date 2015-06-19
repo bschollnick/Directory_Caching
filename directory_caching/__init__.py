@@ -282,18 +282,17 @@ class Cache(object):
             data = DirEntry()
             data.st = s_entry.stat()
             if self.filter_filenames != None:
-#                orig_name = s_entry.name
                 clean_name = self.filter_filenames(s_entry.name)
                 if s_entry.name != clean_name:
                     try:
-                        os.rename(os.path.join(s_entry._path, s_entry.name),
+                        os.rename(s_entry.path,
                                   os.path.join(os.path.realpath(\
                                                scan_directory).strip(),
                                                clean_name))
                     except exceptions.OSError:
-                        pass
+                        print "os error resolving - %s" % s_entry.path
                     except exceptions.AttributeError:
-                        print "Error with Directory, %s" % (s_entry.name)
+                        print "Error with Directory, %s" % (s_entry.path)
 #                    rescan = True
             else:
                 clean_name = s_entry.name
