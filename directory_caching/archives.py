@@ -55,6 +55,8 @@ def return_archive_listing(fqfn):
             return None
         except rarfile.NeedFirstVolume:
             return None
+        except exceptions.IOError:
+            return None
     elif file_extension in ZIP_FILE_TYPES:
         try:
             zipfile.is_zipfile(fqfn)
@@ -66,9 +68,9 @@ def return_archive_listing(fqfn):
                 else:
                     data.append(afn)
             return data
-        except zipfile.BadZipfile:
+        except zipfile.BadZipfile, zipfile.LargeZipFile:
             return None
-        except zipfile.LargeZipFile:
+        except exceptions.IOError:
             return None
     return None
 
