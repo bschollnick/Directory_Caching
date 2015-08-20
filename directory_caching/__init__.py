@@ -243,6 +243,7 @@ class Cache(object):
         self.hidden_dot_files = True
         self.acceptable_extensions = []
         self.filter_filenames = None
+        self.filter_dirnames = None
         self.root_path = None
             # This is the path in the OS that is being examined
             #    (e.g. /Volumes/Users/username/)
@@ -277,6 +278,12 @@ class Cache(object):
         norm_dir_name = scan_directory.strip()
         self.d_cache[norm_dir_name] = {}
         self.d_cache[norm_dir_name]["last_sort"] = None
+        dirname, filename = os.path.split(scan_directory)
+#         if self.filter_dirnames != None:
+#             new_dirname = self.filter_dirnames(dirname)
+#             if new_dirname != dirname:
+#                 os.rename(dirname, new_dirname)
+#                 scan_directory = os.sep(new_dirname, filename)
 
         for s_entry in scandir.scandir(scan_directory):
             data = DirEntry()
@@ -287,12 +294,19 @@ class Cache(object):
                     try:
                         os.rename(s_entry.path,
                                   os.path.join(os.path.realpath(\
-                                               scan_directory).strip(),
+                                               dirname).strip(),
                                                clean_name))
                     except exceptions.OSError:
                         print "os error resolving - %s" % s_entry.path
+                        print "original - ", s_entry.path
+                        print "new - ", os.path.join(os.path.realpath(\
+                                               dirname).strip(),
+                                               clean_name)
+                        continue
+
                     except exceptions.AttributeError:
                         print "Error with Directory, %s" % (s_entry.path)
+                        continue
 #                    rescan = True
             else:
                 clean_name = s_entry.name
@@ -730,6 +744,7 @@ class Cache(object):
                                key=lambda t: t[1].st.st_ctime, reverse=reverse)
 
             self.d_cache[scan_directory]["sort_index"] = files, dirs
+
         return self.d_cache[scan_directory]["sort_index"]
 
 
