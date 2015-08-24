@@ -15,7 +15,7 @@ Support to the directory caching code.
 import exceptions
 import os
 import os.path
-import rarfile
+import rarfile  # https://github.com/markokr/rarfile
 import zipfile
 
 rarfile.PATH_SEP = '/'
