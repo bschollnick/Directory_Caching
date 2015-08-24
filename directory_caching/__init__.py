@@ -18,6 +18,7 @@
    * stat
    * string
    * time
+   * zipfile    - Used for Zip File listings & extraction
 
 **Required 3rd Party Modules**:
 
@@ -30,6 +31,9 @@
 
    * natsort - https://github.com/xolox/python-naturalsort
         * Used for natural sorting when returning alpha results
+
+   * rarfile - https://github.com/markokr/rarfile
+        * Used for RAR File listings & extraction
 
 :Concept:
     The Directory Caching module was the first step in speeding up processing of
@@ -236,7 +240,6 @@ class Cache(object):
         """
         Setup and establish the working implementation for directory caching.
 
-
         """
         # User Changable Settings
         self.files_to_ignore = ['.ds_store', '.htaccess']
@@ -279,23 +282,19 @@ class Cache(object):
         self.d_cache[norm_dir_name] = {}
         self.d_cache[norm_dir_name]["last_sort"] = None
         dirname, filename = os.path.split(scan_directory)
-#         if self.filter_dirnames != None:
-#             new_dirname = self.filter_dirnames(dirname)
-#             if new_dirname != dirname:
-#                 os.rename(dirname, new_dirname)
-#                 scan_directory = os.sep(new_dirname, filename)
 
         for s_entry in scandir.scandir(scan_directory):
             data = DirEntry()
             data.st = s_entry.stat()
             if self.filter_filenames != None:
                 clean_name = self.filter_filenames(s_entry.name)
+#                clean_name = s_entry.name
                 if s_entry.name != clean_name:
+                    cur_dir = os.path.dirname(os.path.realpath(\
+                                           s_entry.path))
                     try:
                         os.rename(s_entry.path,
-                                  os.path.join(os.path.realpath(\
-                                               dirname).strip(),
-                                               clean_name))
+                                  os.path.join(cur_dir,clean_name))
                     except exceptions.OSError:
                         print "os error resolving - %s" % s_entry.path
                         print "original - ", s_entry.path
@@ -303,7 +302,7 @@ class Cache(object):
                                                dirname).strip(),
                                                clean_name)
                         continue
-
+#
                     except exceptions.AttributeError:
                         print "Error with Directory, %s" % (s_entry.path)
                         continue
@@ -314,7 +313,8 @@ class Cache(object):
             if clean_name.strip().lower() in self.files_to_ignore:
                 continue
             if self.hidden_dot_files:
-                if clean_name.startswith("."):
+                if clean_name[0] == ("."):
+#                if clean_name.startswith("."):
                     continue
 
             data.fq_filename = os.path.join(
@@ -398,7 +398,7 @@ class Cache(object):
         path, dirs, files = scandir.walk(scan_directory).next()
         return (len(files), len(dirs))
 
-    def _return_filtered_dir_count(self, scan_directory):
+    def _return_filtered_dir_count_old(self, scan_directory):
         """
         Args:
             scan_directory (str): The fully qualified pathname to examine
@@ -419,25 +419,65 @@ class Cache(object):
         """
         dcount = 0
         fcount = 0
+
         for s_entry in scandir.scandir(scan_directory):
-            if s_entry.is_dir():
-                dcount += 1
-            else:
-                name = s_entry.name.strip().lower()
-                if not name in self.files_to_ignore:
-                    if self.acceptable_extensions != []:
-                        #
-                        #   There are no non-acceptable files.
-                        #
-                        if not os.path.splitext(name)[1][1:] in\
-                            self.acceptable_extensions:
-                        #
-                        #   Filter by extensions
-                        #
-                            continue
-                    fcount += 1
+            try:
+                if s_entry.is_dir():
+                    dcount += 1
+                else:
+                    name = s_entry.name.strip().lower()
+                    if not name in self.files_to_ignore:
+                        if self.acceptable_extensions != []:
+                            #
+                            #   There are no non-acceptable files.
+                            #
+                            if not os.path.splitext(name)[1][1:] in\
+                                self.acceptable_extensions:
+                            #
+                            #   Filter by extensions
+                            #
+                                print name
+                                continue
+                        fcount += 1
+            except OSError:
+                pass
+
         return (fcount, dcount)
 
+
+    def _return_filtered_dir_count(self, scan_directory):
+        def remove_it(name_to_check):
+            if name_to_check in self.files_to_ignore:
+                return True
+            elif os.path.splitext(name_to_check)[1][1:] in\
+                self.acceptable_extensions:
+                    return True
+#                 if self.acceptable_extensions != []:
+#                     #
+#                     #   There are no non-acceptable files.
+#                     #
+#                     if not os.path.splitext(name_to_check)[1][1:] in\
+#                         self.acceptable_extensions:
+#                     #
+#                     #   Filter by extensions
+#                     #
+#                         print name_to_check
+#                         return True
+            return False
+
+        scan_directory = os.path.realpath(scan_directory).strip()
+        path, dirs, files = scandir.walk(scan_directory).next()
+        for dirname in dirs:
+            if remove_it(dirname.lower().strip()):
+#                print "Removing dirname - %s" % dirname
+                dirs.remove(dirname)
+
+        for filename in files:
+            if remove_it(filename.lower().strip()):
+ #               print "Removing filename - %s" % filename
+                files.remove(filename)
+#        print files
+        return (len(files), len(dirs))
 #####################################################
     def directory_in_cache(self, scan_directory):
         """
@@ -578,16 +618,20 @@ class Cache(object):
             #   Is in cache
             st = os.stat(scan_directory)
             #   Return true if modified time on directory is newer Cached Time.
-            if self.d_cache[scan_directory].has_key("last_scanned_time"):
+            if "last_scanned_time" in self.d_cache[scan_directory]:
                 if st[stat.ST_MTIME] > self.d_cache[scan_directory]\
                     ["last_scanned_time"]:
                     return True
 
-            path, raw_dirc, raw_filec = scandir.walk(scan_directory).next()
+            #path, raw_dirc, raw_filec = scandir.walk(scan_directory).next()
+            raw_filec, raw_dirc = self._return_total_fd_count(scan_directory)
             try:
-                if self.d_cache[scan_directory]["raw_filec"] != len(raw_filec)\
-                  or self.d_cache[scan_directory]["raw_dirc"] != len(raw_dirc):
+                if self.d_cache[scan_directory]["raw_filec"] != raw_filec \
+                  or self.d_cache[scan_directory]["raw_dirc"] != raw_dirc:
                     return True
+#                if self.d_cache[scan_directory]["raw_filec"] != len(raw_filec)\
+#                  or self.d_cache[scan_directory]["raw_dirc"] != len(raw_dirc):
+#                    return True
             except exceptions.KeyError:
                 pass
             return False
@@ -683,7 +727,6 @@ class Cache(object):
             # e.g.  "this is the filename .txt" -> "this is the filename.txt"
         return filename
 
-
         """
         scan_directory = os.path.realpath(scan_directory).strip()
         if os.path.exists(scan_directory) != False:
@@ -749,6 +792,16 @@ class Cache(object):
 
 
 #####################################################
+    def sanity_check(self, scan_directory):
+       scan_directory = os.path.realpath(scan_directory).strip()
+       if not 'files' in self.d_cache[scan_directory]:
+            self.d_cache[scan_directory] = {}
+            self.d_cache[scan_directory]["last_sort"] = None
+       elif not 'dirs' in  self.d_cache[scan_directory]:
+            self.d_cache[scan_directory] = {}
+            self.d_cache[scan_directory]["last_sort"] = None
+
+
     def return_sort_name(self, scan_directory, reverse=False):
         """
     Here for backward compatibility versus earlier versions of the library.
@@ -761,6 +814,8 @@ class Cache(object):
     Returns:
         Same as return_sorted.
         """
+        scan_directory = os.path.realpath(scan_directory).strip()
+        self.sanity_check(scan_directory)
         return self.return_sorted(scan_directory,
                                   sort_by=SORT_BY_NAME,
                                   reverse=reverse)
