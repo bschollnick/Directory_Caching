@@ -398,7 +398,8 @@ class Cache(object):
         path, dirs, files = scandir.walk(scan_directory).next()
         return (len(files), len(dirs))
 
-    def _return_filtered_dir_count_old(self, scan_directory):
+
+    def _return_filtered_dir_count(self, scan_directory):
         """
         Args:
             scan_directory (str): The fully qualified pathname to examine
@@ -417,66 +418,30 @@ class Cache(object):
         The numbers will not necessarily match _return_total_fd_count, since
         this will reject files, where _return_total_fd_count will not.
         """
-        dcount = 0
-        fcount = 0
-
-        for s_entry in scandir.scandir(scan_directory):
-            try:
-                if s_entry.is_dir():
-                    dcount += 1
-                else:
-                    name = s_entry.name.strip().lower()
-                    if not name in self.files_to_ignore:
-                        if self.acceptable_extensions != []:
-                            #
-                            #   There are no non-acceptable files.
-                            #
-                            if not os.path.splitext(name)[1][1:] in\
-                                self.acceptable_extensions:
-                            #
-                            #   Filter by extensions
-                            #
-                                print name
-                                continue
-                        fcount += 1
-            except OSError:
-                pass
-
-        return (fcount, dcount)
-
-
-    def _return_filtered_dir_count(self, scan_directory):
         def remove_it(name_to_check):
             if name_to_check in self.files_to_ignore:
+                #
+                #   There are no non-acceptable files.
+                #
                 return True
-            elif os.path.splitext(name_to_check)[1][1:] in\
+            elif not os.path.splitext(name_to_check)[1][1:] in\
                 self.acceptable_extensions:
+                    #
+                    #   Filter by extensions
+                    #
                     return True
-#                 if self.acceptable_extensions != []:
-#                     #
-#                     #   There are no non-acceptable files.
-#                     #
-#                     if not os.path.splitext(name_to_check)[1][1:] in\
-#                         self.acceptable_extensions:
-#                     #
-#                     #   Filter by extensions
-#                     #
-#                         print name_to_check
-#                         return True
             return False
 
         scan_directory = os.path.realpath(scan_directory).strip()
         path, dirs, files = scandir.walk(scan_directory).next()
         for dirname in dirs:
             if remove_it(dirname.lower().strip()):
-#                print "Removing dirname - %s" % dirname
                 dirs.remove(dirname)
 
         for filename in files:
             if remove_it(filename.lower().strip()):
- #               print "Removing filename - %s" % filename
+                print "Removing - %s" % filename
                 files.remove(filename)
-#        print files
         return (len(files), len(dirs))
 #####################################################
     def directory_in_cache(self, scan_directory):
@@ -537,7 +502,7 @@ class Cache(object):
        cdl = directory_caching.Cache()
        cdl.smart_read( "/Users/Benjamin" )
        dirs = cdl.return_sort_name(scan_directory="/Users/Benjamin")[1]
-       print dirs[cdl.return_current_directory_offset(
+                    print dirs[cdl.return_current_directory_offset(
                     scan_directory = "/Users/Benjamin",
                     current_directory="Movies", offset=0)]
        print dirs[cdl.return_current_directory_offset(
