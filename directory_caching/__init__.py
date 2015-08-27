@@ -424,7 +424,8 @@ class Cache(object):
                 #   There are no non-acceptable files.
                 #
                 return True
-            elif not os.path.splitext(name_to_check)[1][1:] in\
+
+            if not os.path.splitext(name_to_check)[1][1:] in\
                 self.acceptable_extensions:
                     #
                     #   Filter by extensions
@@ -434,13 +435,10 @@ class Cache(object):
 
         scan_directory = os.path.realpath(scan_directory).strip()
         path, dirs, files = scandir.walk(scan_directory).next()
-        for dirname in dirs:
-            if remove_it(dirname.lower().strip()):
-                dirs.remove(dirname)
 
         for filename in files:
             if remove_it(filename.lower().strip()):
-                print "Removing - %s" % filename
+#                print "Removing - %s" % filename
                 files.remove(filename)
         return (len(files), len(dirs))
 #####################################################
