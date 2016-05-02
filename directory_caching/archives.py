@@ -48,15 +48,10 @@ def return_archive_listing(fqfn):
                     pass
                 else:
                     data.append(afn)
-            return data
-        except rarfile.BadRarFile:
-            return None
-        except rarfile.NotRarFile:
-            return None
-        except rarfile.NeedFirstVolume:
-            return None
-        except exceptions.IOError:
-            return None
+        except rarfile.BadRarFile, rarfile.NotRarFile:
+            data = None
+        except rarfile.NeedFirstVolume, exceptions.IOError:
+            data = None
     elif file_extension in ZIP_FILE_TYPES:
         try:
             zipfile.is_zipfile(fqfn)
@@ -67,12 +62,11 @@ def return_archive_listing(fqfn):
                     pass
                 else:
                     data.append(afn)
-            return data
         except zipfile.BadZipfile, zipfile.LargeZipFile:
-            return None
+            data = None
         except exceptions.IOError:
-            return None
-    return None
+            data = None
+    return data
 
 def return_archive_contents(fqfn, filename):
     """
@@ -95,13 +89,12 @@ def return_archive_contents(fqfn, filename):
             rfile = rarfile.RarFile(fqfn, 'r')
             return rfile.read(filename)
         except exceptions.TypeError:
-            return None
-        except rarfile.BadRarFile:
-            return None
-        except rarfile.NotRarFile:
-            return None
+            pass
+        except rarfile.BadRarFile, rarfile.NotRarFile:
+            pass
         except rarfile.NeedFirstVolume:
-            return None
+            pass
+        return None
     elif file_extension in ZIP_FILE_TYPES:
         try:
             zfile = zipfile.ZipFile(fqfn, 'r')
