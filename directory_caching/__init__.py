@@ -2,7 +2,7 @@
 :Module: Directory Caching
 :Date: 2015-02-17
 :Platforms: Mac, Windows, Unix (Tested under Mac OS X)
-:Version: 1
+:Version: 1.2
 :Authors:
     - Benjamin Schollnick
 
@@ -111,16 +111,17 @@ code::
 """
 #####################################################
 #   Batteries Included imports
-import directory_caching.archives as archives
 import exceptions
 import os
 import os.path
 import stat
 import time
+import scandir  # https://github.com/benhoyt/scandir
+import directory_caching.archives as archives
+import directory_caching.archives2 as archives2
 
 #   Required third party
 import natsort  # https://github.com/xolox/python-naturalsort
-import scandir  # https://github.com/benhoyt/scandir
 
 SORT_BY_NAME = 0
 SORT_BY_MODIFIED = 1
@@ -203,7 +204,7 @@ class DirEntry(object):
         self.st = None
         self.human_st_mtime = None
         self.is_archive = None
-        self.archive_listings = None
+        self.archive_file = None
         self.extended_data = {}
 
 #####################################################
@@ -281,7 +282,7 @@ class Cache(object):
         norm_dir_name = scan_directory.strip()
         self.d_cache[norm_dir_name] = {}
         self.d_cache[norm_dir_name]["last_sort"] = None
-        dirname, filename = os.path.split(scan_directory)
+        dirname = os.path.split(scan_directory)[0]
 
         for s_entry in scandir.scandir(scan_directory):
             data = DirEntry()
@@ -294,13 +295,12 @@ class Cache(object):
                                            s_entry.path))
                     try:
                         os.rename(s_entry.path,
-                                  os.path.join(cur_dir,clean_name))
+                                  os.path.join(cur_dir, clean_name))
                     except exceptions.OSError:
                         print "os error resolving - %s" % s_entry.path
                         print "original - ", s_entry.path
                         print "new - ", os.path.join(os.path.realpath(\
-                                               dirname).strip(),
-                                               clean_name)
+                                               dirname).strip(), clean_name)
                         continue
 #
                     except exceptions.AttributeError:
@@ -313,8 +313,8 @@ class Cache(object):
             if clean_name.strip().lower() in self.files_to_ignore:
                 continue
             if self.hidden_dot_files:
-                if clean_name[0] == ("."):
-#                if clean_name.startswith("."):
+#                if clean_name[0] == ("."):
+                if clean_name.startswith("."):
                     continue
 
             data.fq_filename = os.path.join(
@@ -344,11 +344,12 @@ class Cache(object):
                 data.file_extension = data.dot_extension[1:]
                 if data.file_extension in ARCHIVE_FILE_TYPES:
                     data.is_archive = True
-                    data.archive_listings = archives.return_archive_listing(\
-                        data.fq_filename)
-                    if data.archive_listings != None:
-                        data.archive_listings = natsort.natsort(\
-                            data.archive_listings)
+                    data.archive_file = archives2.id_cfile_by_sig(data.fq_filename)
+                    data.archive_file.get_listings()
+
+                    if data.archive_file.listings != None:
+                        data.archive_file.listings = natsort.natsort(
+                            data.archive_file.listings)
 
                 if self.ed_collector != None:
                     data.extended_data = self.ed_collector(data.fq_filename)
@@ -430,7 +431,7 @@ class Cache(object):
                     #
                     #   Filter by extensions
                     #
-                    return True
+                return True
             return False
 
         scan_directory = os.path.realpath(scan_directory).strip()
@@ -500,7 +501,7 @@ class Cache(object):
        cdl = directory_caching.Cache()
        cdl.smart_read( "/Users/Benjamin" )
        dirs = cdl.return_sort_name(scan_directory="/Users/Benjamin")[1]
-                    print dirs[cdl.return_current_directory_offset(
+       print dirs[cdl.return_current_directory_offset(
                     scan_directory = "/Users/Benjamin",
                     current_directory="Movies", offset=0)]
        print dirs[cdl.return_current_directory_offset(
@@ -512,6 +513,7 @@ class Cache(object):
 
         """
         scan_directory = os.path.realpath(scan_directory).strip()
+#        print "scan_directory %s " % scan_directory
         self.smart_read(scan_directory)
         dirs = self.return_sorted(scan_directory,
                                   sort_by=sort_type,
@@ -756,11 +758,11 @@ class Cache(object):
 
 #####################################################
     def sanity_check(self, scan_directory):
-       scan_directory = os.path.realpath(scan_directory).strip()
-       if not 'files' in self.d_cache[scan_directory]:
+        scan_directory = os.path.realpath(scan_directory).strip()
+        if not 'files' in self.d_cache[scan_directory]:
             self.d_cache[scan_directory] = {}
             self.d_cache[scan_directory]["last_sort"] = None
-       elif not 'dirs' in  self.d_cache[scan_directory]:
+        elif not 'dirs' in  self.d_cache[scan_directory]:
             self.d_cache[scan_directory] = {}
             self.d_cache[scan_directory]["last_sort"] = None
 
