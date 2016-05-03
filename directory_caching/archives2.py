@@ -137,7 +137,6 @@ print filename, 'is a', cf.mime_type, 'file'
         Returns - None
         """
         self.filename = os.path.realpath(filename)
-        self.handler = None
         self.listings = []
 
     @classmethod
@@ -164,7 +163,7 @@ print filename, 'is a', cf.mime_type, 'file'
        """
         if self.handler != None:
 # pylint: disable=E1102
-            return self.handler(self.filename)
+            return self.handler(self.filename, 'r')
 # pylint: enable=E1102
         else:
             raise NotInitializedYet
@@ -191,8 +190,8 @@ print filename, 'is a', cf.mime_type, 'file'
         returns - None
         """
         self.listings = []
-        handle = self._open()
-        with handle(self.filename, 'r') as cfile:
+        handle = self._open
+        with handle() as cfile:
             for afn in cfile.namelist():
                 if not (afn.startswith("__MACOSX") or
                         os.path.split(afn)[1] == ""):
@@ -207,8 +206,8 @@ print filename, 'is a', cf.mime_type, 'file'
         inputs - filename to extract
         returns - blob from the archive.
         """
-        handle = self._open()
-        with handle(self.filename, 'r') as cfile:
+        handle = self._open
+        with handle() as cfile:
             return cfile.read(filename)
 
 
@@ -230,7 +229,6 @@ class RarFile(CompressedFile):
     import rarfile
     rarfile.PATH_SEP = '/'
     signature = '\x52\x61\x72\x21\x1a\x07'
-
     extensions = ['rar', 'cbr']
     mime_type = 'application/x-rar-compressed'
     handler = rarfile.RarFile
