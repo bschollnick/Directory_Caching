@@ -117,9 +117,10 @@ import os.path
 import stat
 import time
 import scandir  # https://github.com/benhoyt/scandir
-import directory_caching.utilities as utilities
+import utilities
 #import directory_caching.archives as archives
-import directory_caching.archives2 as archives2
+#import archives2 as archives2
+import archives3 as archives2
 
 #   Required third party
 import natsort  # https://github.com/xolox/python-naturalsort
@@ -292,8 +293,7 @@ class Cache(object):
             data.fq_filename = os.path.join(
                 os.path.realpath(scan_directory.strip()),
                 s_entry.name)
-            data.parentdirectory = os.path.join(
-                os.path.split(scan_directory)[0:-1])
+            data.parentdirectory = os.path.split(scan_directory)[0:-1][0]
             data.human_st_mtime = time.asctime(
                 time.localtime(data.st[stat.ST_MTIME]))
 
@@ -318,11 +318,15 @@ class Cache(object):
                     data.is_archive = True
                     data.archive_file = \
                         archives2.id_cfile_by_sig(data.fq_filename)
-                    data.archive_file.get_listings()
+                    if not data.archive_file is None:
+                        data.archive_file.get_listings()
 
                     if data.archive_file.listings != None:
-                        data.archive_file.listings = natsort.natsort(
-                            data.archive_file.listings)
+                        try:
+                            data.archive_file.listings = natsort.natsort(
+                                data.archive_file.listings)
+                        except exceptions.UnicodeEncodeError:
+                            pass
 
                 if self.ed_collector != None:
                     data.extended_data = self.ed_collector(data.fq_filename)
@@ -699,6 +703,7 @@ class Cache(object):
     which contain the data from the cached directory.
 
         """
+        self.sanity_check(scan_directory)
         scan_directory = os.path.realpath(scan_directory).strip()
         if self.smart_read(scan_directory) is False:
             return ([], [])
